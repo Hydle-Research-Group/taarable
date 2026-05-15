@@ -9,7 +9,8 @@ repository = "https://github.com/motivation-inc/TAAR1"
 publish = false
 
 [dependencies]
-slint = "1.16.1"
+serialport = "4.9.0"
+slint = { version = "1.16.1", features = ["live-preview"] }
 
 [build-dependencies]
 slint-build = "1.16.1"

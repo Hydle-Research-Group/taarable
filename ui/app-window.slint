@@ -1,9 +1,47 @@
-import { VerticalBox } from "std-widgets.slint";
+import {
+    VerticalBox,
+    HorizontalBox,
+    TextEdit,
+    Button,
+} from "std-widgets.slint";
 
 export component AppWindow inherits Window {
-    VerticalBox {
-        Text {
-            text: "Hello, World!";
+    in-out property <string> command;
+    in-out property <string> interface;
+    in-out property <bool> enable_command_sending: true;
+    callback command_sent();
+
+    HorizontalBox {
+        VerticalLayout {
+            TextEdit {
+                placeholder-text: "Commands will be seen here";
+                read-only: true;
+                text: interface;
+            }
+
+            HorizontalBox {
+                command_input := TextInput {
+                    // disable toggle (re-enabled when command finished)
+                    enabled: enable_command_sending;
+                    accepted => {
+                        command = command_input.text;
+                        command_input.text = "";
+                        command_sent();
+                    }
+                }
+
+                send_button := Button {
+                    width: 15%;
+                    text: "Send";
+                    // disable toggle (re-enabled when command finished)
+                    enabled: enable_command_sending;
+                    clicked => {
+                        command = command_input.text;
+                        command_input.text = "";
+                        command_sent();
+                    }
+                }
+            }
         }
     }
 }
