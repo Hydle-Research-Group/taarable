@@ -1,0 +1,15 @@
+[package]
+name = "taarable"
+version = "0.1.0"
+description = "UART communication interface for the TAAR series robotic arms "
+authors = ["Motivation Software Inc."]
+edition = "2024"
+license = "GPL-3.0"
+repository = "https://github.com/motivation-inc/TAAR1"
+publish = false
+
+[dependencies]
+slint = "1.16.1"
+
+[build-dependencies]
+slint-build = "1.16.1"
