@@ -66,7 +66,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                ui.set_interface(ui.get_interface() + &format!("Response: {}\n", "<>"));
                 ui.set_enable_command_sending(true);
             }
 
