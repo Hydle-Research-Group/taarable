@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 match port.write_all(cmd.as_bytes()) {
                     Ok(_) => {
                         let mut response = String::new();
-                        let mut buffer = [0u8; 64];
+                        let mut buffer = Vec::new();
 
                         loop {
                             match port.read(&mut buffer) {
@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                         }
 
-                        ui.set_interface(ui.get_interface() + &format!("Response: {}\n", response));
+                        ui.set_interface(ui.get_interface() + &format!("{}\n", response));
                     }
 
                     Err(e) => {
