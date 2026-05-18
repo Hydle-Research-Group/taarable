@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
 
     let mut port = serialport::new("/dev/ttyACM0", 115200)
-        .timeout(Duration::from_millis(100))
+        .timeout(Duration::from_millis(1000))
         .open()?;
 
     ui.on_command_sent({
@@ -20,10 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ui.set_interface(ui.get_interface() + &format!("Sent: {}\n", cmd));
                 ui.set_enable_command_sending(false);
 
-                match port.write_all(cmd.as_bytes()) {
+                match port.write_all(format!("{}\n", cmd).as_bytes()) {
                     Ok(_) => {
                         let mut response = String::new();
-                        let mut buffer = Vec::new();
+                        let mut buffer = [0u8; 128];
 
                         loop {
                             match port.read(&mut buffer) {
@@ -36,19 +36,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                         break;
                                     }
                                 }
-
                                 Ok(_) => {
                                     // nothing read, keep waiting
                                 }
-
-                                Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                                    ui.set_interface(
-                                        ui.get_interface()
-                                            + &format!("Timeout waiting for response\n"),
-                                    );
-                                    break;
-                                }
-
                                 Err(e) => {
                                     ui.set_interface(
                                         ui.get_interface() + &format!("Read Error: {}\n", e),
@@ -68,8 +58,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 ui.set_enable_command_sending(true);
             }
-
-            println!("Received: {}", cmd);
         }
     });
 
