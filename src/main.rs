@@ -1,17 +1,20 @@
-use serialport::{SerialPort, available_ports};
+use serialport::{SerialPort, SerialPortType::UsbPort, available_ports};
 use slint::{ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, error::Error, rc::Rc, time::Duration};
+use std::{cell::RefCell, error::Error, rc::Rc};
 
 slint::include_modules!();
 
 fn main() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
 
-    // serialport::new("/dev/ttyACM0", 115200).timeout(Duration::from_millis(1000)).open()?;
     let serial_port: Rc<RefCell<Option<Box<dyn SerialPort>>>> = Rc::new(RefCell::new(None));
+    let mut usb_ports = available_ports().expect("No available ports");
+    usb_ports.sort_by_key(|p| match p.port_type {
+        UsbPort(_) => 0,
+        _ => 1,
+    });
     let ports: ModelRc<SharedString> = ModelRc::new(Rc::new(VecModel::from(
-        available_ports()
-            .expect("No available ports")
+        usb_ports
             .iter()
             .map(|p| p.port_name.clone().into())
             .collect::<Vec<SharedString>>(),
@@ -88,10 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         move || {
             let ui = ui_handle.unwrap();
 
-            match serialport::new(&*ui.get_active_port(), 115200)
-                .timeout(Duration::from_millis(1000))
-                .open()
-            {
+            match serialport::new(&*ui.get_active_port(), 115200).open() {
                 Ok(port) => {
                     *p.borrow_mut() = Some(port);
 
@@ -107,6 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
+    ui.invoke_port_changed(); // we must attempt to connect to the first available port
     ui.run()?;
 
     Ok(())
