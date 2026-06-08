@@ -54,9 +54,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                                         response.push_str(&chunk);
                                     }
-
-                                    Ok(_) => {}
-
+                                    Ok(_) => continue,
+                                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                                        break;
+                                    }
                                     Err(e) => {
                                         ui.set_interface(
                                             ui.get_interface() + &format!("Read Error: {}\n", e),
