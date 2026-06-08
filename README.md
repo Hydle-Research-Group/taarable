@@ -22,7 +22,7 @@ SLINT_LIVE_PREVIEW=1 cargo run
 
 ## Command Standard
 
-All TAAR-`x` firmware implement the command standard set by TAARABLE. Some models may not implement all commands (see _Supported By_)
+All TAAR-`x` firmware implements the command control standard set by TAARABLE. Some models may not implement all commands (see _Supported By_)
 
 | Command | Description | Supported By |
 | - | - | - |
