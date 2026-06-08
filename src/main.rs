@@ -1,16 +1,28 @@
-use std::{error::Error, time::Duration};
+use serialport::{SerialPort, available_ports};
+use slint::{ModelRc, SharedString, VecModel};
+use std::{cell::RefCell, error::Error, rc::Rc, time::Duration};
 
 slint::include_modules!();
 
 fn main() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
 
-    let mut port = serialport::new("/dev/ttyACM0", 115200)
-        .timeout(Duration::from_millis(1000))
-        .open()?;
+    // serialport::new("/dev/ttyACM0", 115200).timeout(Duration::from_millis(1000)).open()?;
+    let serial_port: Rc<RefCell<Option<Box<dyn SerialPort>>>> = Rc::new(RefCell::new(None));
+    let ports: ModelRc<SharedString> = ModelRc::new(Rc::new(VecModel::from(
+        available_ports()
+            .expect("No available ports")
+            .iter()
+            .map(|p| p.port_name.clone().into())
+            .collect::<Vec<SharedString>>(),
+    )));
+
+    // default ports
+    ui.set_ports(ports);
 
     ui.on_command_sent({
         let ui_handle = ui.as_weak();
+        let p = serial_port.clone();
 
         move || {
             let ui = ui_handle.unwrap();
@@ -20,43 +32,77 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ui.set_interface(ui.get_interface() + &format!("Sent: {}\n", cmd));
                 ui.set_enable_command_sending(false);
 
-                match port.write_all(format!("{}\n", cmd).as_bytes()) {
-                    Ok(_) => {
-                        let mut response = String::new();
-                        let mut buffer = [0u8; 128];
+                let mut port_ref = p.borrow_mut();
 
-                        loop {
-                            match port.read(&mut buffer) {
-                                Ok(n) if n > 0 => {
-                                    let chunk = String::from_utf8_lossy(&buffer[..n]);
-                                    response.push_str(&chunk);
+                if let Some(port) = port_ref.as_mut() {
+                    match port.write_all(format!("{}\n", cmd).as_bytes()) {
+                        Ok(_) => {
+                            let mut response = String::new();
+                            let mut buffer = [0u8; 128];
 
-                                    // stop when newline received
-                                    if response.contains('\n') {
+                            loop {
+                                match port.read(&mut buffer) {
+                                    Ok(n) if n > 0 => {
+                                        let chunk = String::from_utf8_lossy(&buffer[..n]);
+
+                                        if response.contains('\n') {
+                                            break;
+                                        }
+
+                                        response.push_str(&chunk);
+                                    }
+
+                                    Ok(_) => {}
+
+                                    Err(e) => {
+                                        ui.set_interface(
+                                            ui.get_interface() + &format!("Read Error: {}\n", e),
+                                        );
                                         break;
                                     }
                                 }
-                                Ok(_) => {
-                                    // nothing read, keep waiting
-                                }
-                                Err(e) => {
-                                    ui.set_interface(
-                                        ui.get_interface() + &format!("Read Error: {}\n", e),
-                                    );
-                                    break;
-                                }
                             }
+
+                            ui.set_interface(ui.get_interface() + &format!("{}\n", response));
                         }
 
-                        ui.set_interface(ui.get_interface() + &format!("{}\n", response));
+                        Err(e) => {
+                            ui.set_interface(
+                                ui.get_interface() + &format!("Error Writing: {}\n", e),
+                            );
+                        }
                     }
-
-                    Err(e) => {
-                        ui.set_interface(ui.get_interface() + &format!("Error Writing: {}\n", e));
-                    }
+                } else {
+                    ui.set_interface(ui.get_interface() + "No serial port selected/open\n");
                 }
 
                 ui.set_enable_command_sending(true);
+            }
+        }
+    });
+
+    ui.on_port_changed({
+        let ui_handle = ui.as_weak();
+        let p = serial_port.clone();
+
+        move || {
+            let ui = ui_handle.unwrap();
+
+            match serialport::new(&*ui.get_active_port(), 115200)
+                .timeout(Duration::from_millis(1000))
+                .open()
+            {
+                Ok(port) => {
+                    *p.borrow_mut() = Some(port);
+
+                    ui.set_interface(
+                        ui.get_interface() + &format!("Connected to {}\n", ui.get_active_port()),
+                    );
+                }
+
+                Err(e) => {
+                    ui.set_interface(ui.get_interface() + &format!("Failed to open port: {}\n", e));
+                }
             }
         }
     });

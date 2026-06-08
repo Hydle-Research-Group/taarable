@@ -1,7 +1,7 @@
 [package]
 name = "taarable"
-version = "0.1.0"
-description = "UART communication interface for the TAAR series robotic arms "
+version = "0.1.0-alpha"
+description = "UART communication interface for the TAAR-x robotic arms"
 authors = ["Hydle Research Group"]
 edition = "2024"
 license = "GPL-3.0"

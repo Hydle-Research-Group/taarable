@@ -3,16 +3,28 @@ import {
     HorizontalBox,
     TextEdit,
     Button,
+    ComboBox,
 } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
+    in property <[string]> ports;
     in-out property <string> command;
+    in-out property <string> active_port: ports[0];
     in-out property <string> interface;
     in-out property <bool> enable_command_sending: true;
     callback command_sent();
+    callback port_changed();
 
     HorizontalBox {
         VerticalBox {
+            ComboBox {
+                model: ports;
+                selected => {
+                    active_port = ports[self.current-index];
+                    port_changed();
+                }
+            }
+
             TextEdit {
                 placeholder-text: "Commands will be seen here";
                 read-only: true;
