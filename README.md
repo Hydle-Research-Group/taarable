@@ -27,10 +27,13 @@ All TAAR-`x` firmware implements the command control standard set by TAARABLE. S
 | Command | Description | Supported By |
 | - | - | - |
 | `home` | Homing sequence (calculate machine limits) | `TAAR-1` |
+| `echo [msg: string]` | Echo `msg` back through UART | `TAAR-1` |
 | `arm+` | Move arm up 1° | `TAAR-1` |
 | `arm-` | Move arm down 1° | `TAAR-1` |
 | `base+` | Move base left 1° | `TAAR-1` |
 | `base-` | Move base right 1° | `TAAR-1` |
+| `rotbase [angle: float]` | Move base to `angle` | `TAAR-1` |
+| `rotarm [angle: float]` | Move arm to `angle` | `TAAR-1` |
 | `moveto [x: float] [y: float] [z: float]` | Move to (`x`, `y`, `z`) performing inverse kinematics | `TAAR-1` |
 
 ## Free & Open-Source
