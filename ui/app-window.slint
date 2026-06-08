@@ -4,6 +4,7 @@ import {
     TextEdit,
     Button,
     ComboBox,
+    LineEdit,
 } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
@@ -11,17 +12,143 @@ export component AppWindow inherits Window {
     in-out property <string> command;
     in-out property <string> active_port: ports[0];
     in-out property <string> interface;
+    // disable toggle (re-enabled when command finished)
     in-out property <bool> enable_command_sending: true;
     callback command_sent();
     callback port_changed();
 
     HorizontalBox {
         VerticalBox {
-            ComboBox {
-                model: ports;
-                selected => {
-                    active_port = ports[self.current-index];
-                    port_changed();
+            Rectangle {
+                width: 260px;
+                height: 260px;
+                border-radius: self.width / 2;
+                background: #202020;
+
+                Button {
+                    x: parent.width / 2 - self.width / 2;
+                    y: 20px;
+                    enabled: enable_command_sending;
+                    text: "+arm";
+
+                    clicked => {
+                        command = "arm+";
+                        command_sent();
+                    }
+                }
+
+                Button {
+                    x: 20px;
+                    y: parent.height / 2 - self.height / 2;
+                    enabled: enable_command_sending;
+                    text: "+base";
+
+                    clicked => {
+                        command = "base+";
+                        command_sent();
+                    }
+                }
+
+                Button {
+                    x: parent.width / 2 - self.width / 2;
+                    y: parent.height / 2 - self.height / 2;
+                    enabled: enable_command_sending;
+                    text: "home";
+
+                    clicked => {
+                        command = "home";
+                        command_sent();
+                    }
+                }
+
+                Button {
+                    x: parent.width - self.width - 20px;
+                    y: parent.height / 2 - self.height / 2;
+                    enabled: enable_command_sending;
+                    text: "-base";
+
+                    clicked => {
+                        command = "base-";
+                        command_sent();
+                    }
+                }
+
+                Button {
+                    x: parent.width / 2 - self.width / 2;
+                    y: parent.height - self.height - 20px;
+                    enabled: enable_command_sending;
+                    text: "-arm";
+
+                    clicked => {
+                        command = "arm-";
+                        command_sent();
+                    }
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            VerticalBox {
+                HorizontalBox {
+                    Text {
+                        text: "x:";
+                    }
+
+                    x := LineEdit {
+                        input-type: decimal;
+                        text: "0.0";
+                    }
+
+                    Text {
+                        text: "y:";
+                    }
+
+                    y := LineEdit {
+                        input-type: decimal;
+                        text: "0.0";
+                    }
+
+                    Text {
+                        text: "z:";
+                    }
+
+                    z := LineEdit {
+                        input-type: decimal;
+                        text: "0.0";
+                    }
+                }
+
+                Button {
+                    text: "Move To Position";
+                    clicked => {
+                        command = "moveto " + x.text + " " + y.text + " " + z.text;
+                        command_sent();
+                    }
+                }
+            }
+        }
+
+        VerticalBox {
+            HorizontalBox {
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
+
+                Button {
+                    text: "Clear Messages";
+                    clicked => {
+                        interface = "";
+                    }
+                }
+
+                ComboBox {
+                    model: ports;
+                    selected => {
+                        active_port = ports[self.current-index];
+                        port_changed();
+                    }
                 }
             }
 
@@ -32,8 +159,7 @@ export component AppWindow inherits Window {
             }
 
             HorizontalBox {
-                command_input := TextInput {
-                    // disable toggle (re-enabled when command finished)
+                command_input := LineEdit {
                     enabled: enable_command_sending;
                     accepted => {
                         command = command_input.text;
@@ -45,7 +171,6 @@ export component AppWindow inherits Window {
                 send_button := Button {
                     width: 15%;
                     text: "Send";
-                    // disable toggle (re-enabled when command finished)
                     enabled: enable_command_sending;
                     clicked => {
                         command = command_input.text;
