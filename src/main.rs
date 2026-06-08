@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 }
                             }
 
-                            ui.set_interface(ui.get_interface() + &format!("{}\n", response));
+                            ui.set_interface(ui.get_interface() + &format!("{}", response));
                         }
 
                         Err(e) => {
