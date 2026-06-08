@@ -32,3 +32,9 @@ All TAAR-`x` firmware implement the command standard set by TAARABLE. Some model
 | `base+` | Move base right 1° | `TAAR-1` |
 | `base-` | Move base left 1° | `TAAR-1` |
 | `moveto [x: float] [y: float] [z: float]` | Move to (`x`, `y`, `z`) performing inverse kinematics | `TAAR-1` |
+
+## Free & Open-Source
+
+TAARABLE is 100% free with no drawbacks or limitations. There is no "premium" version; you get the latest and greatest, all licensed under the GPL-3.0.
+
+All source code is public, to anyone. There is no "hidden mechanism" included in this repository; every reference and used factor exists completely and fully.
