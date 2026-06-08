@@ -22,6 +22,10 @@ export component AppWindow inherits Window {
             Rectangle {
                 width: 260px;
                 height: 260px;
+                drop-shadow-color: #0f0f0f;
+                drop-shadow-blur: 10px;
+                border-color: #0f0f0f;
+                border-width: 1px;
                 border-radius: self.width / 2;
                 background: #202020;
 
@@ -87,7 +91,7 @@ export component AppWindow inherits Window {
             }
 
             Rectangle {
-                horizontal-stretch: 1;
+                vertical-stretch: 1;
             }
 
             VerticalBox {
@@ -153,7 +157,7 @@ export component AppWindow inherits Window {
             }
 
             TextEdit {
-                placeholder-text: "Commands will be seen here";
+                placeholder-text: "Messages will be seen here";
                 read-only: true;
                 text: interface;
             }
