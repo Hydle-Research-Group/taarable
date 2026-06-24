@@ -9,6 +9,8 @@ repository = "https://github.com/Hydle-Research-Group/taarable"
 publish = false
 
 [dependencies]
+serde = { version = "1.0.228", features = ["serde_derive"] }
+serde_json = "1.0.150"
 serialport = "4.9.0"
 slint = { version = "1.16.1", features = ["live-preview"] }
 

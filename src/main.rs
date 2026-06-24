@@ -1,8 +1,12 @@
+use serde::Deserialize;
 use serialport::{SerialPort, SerialPortType::UsbPort, available_ports};
 use slint::{ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, error::Error, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 
 slint::include_modules!();
+
+#[derive(Deserialize)]
+struct JsonResponse(HashMap<String, String>);
 
 fn main() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
@@ -67,7 +71,33 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 }
                             }
 
-                            ui.set_interface(ui.get_interface() + &format!("{}", response));
+                            let received: JsonResponse = match serde_json::from_str(&response) {
+                                Ok(r) => r,
+                                Err(e) => {
+                                    ui.set_interface(
+                                        ui.get_interface()
+                                            + &format!("Error parsing response: {}", e),
+                                    );
+
+                                    return;
+                                }
+                            };
+
+                            for (kind, message) in received.0 {
+                                if kind == "info" {
+                                    ui.set_interface(
+                                        ui.get_interface() + &format!("Info: {}", message),
+                                    );
+                                } else if kind == "warning" {
+                                    ui.set_interface(
+                                        ui.get_interface() + &format!("Warning: {}", message),
+                                    );
+                                } else if kind == "error" {
+                                    ui.set_interface(
+                                        ui.get_interface() + &format!("Error: {}", message),
+                                    );
+                                }
+                            }
                         }
 
                         Err(e) => {
@@ -77,7 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         }
                     }
                 } else {
-                    ui.set_interface(ui.get_interface() + "No serial port selected/open\n");
+                    ui.set_interface(ui.get_interface() + "No serial port selected or open\n");
                 }
 
                 ui.set_enable_command_sending(true);

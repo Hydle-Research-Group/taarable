@@ -1,10 +1,10 @@
 # TAARABLE
-A UART communication interface for the TAAR-`x` robotic arms.
+A USB communication interface for the TAAR robotic arm.
 
-This app creates a Slint user interface over UART communication, allowing for command sending and maching homing/jogging controls.
+This app creates a Slint user interface over UART communication, allowing for command sending and machine controls.
 
 > [!WARNING]
-> TAARABLE is currently under active development, and the command standard is subject to changes. See the [roadmap issue](https://github.com/Hydle-Research-Group/taarable/issues/1) for an outline of the project timeline.
+> TAARABLE is currently under active development, and the interface standard is subject to changes. See the [roadmap issue](https://github.com/Hydle-Research-Group/taarable/issues/1) for an outline of the project timeline.
 
 ## Usage
 
@@ -14,27 +14,33 @@ To start, clone the repository:
 git clone https://github.com/Hydle-Research-Group/taarable.git
 ```
 
-Then run `cargo run` to launch the interface. For local development, Slint hot-reloading can be enabled via:
+Then use `cargo run` to launch the interface. For local development, Slint hot-reloading can be enabled via:
 
 ```sh
 SLINT_LIVE_PREVIEW=1 cargo run
 ```
 
-## Command Standard
+## Interface Standard
 
-All TAAR-`x` firmware implements the command control standard set by TAARABLE. Some models may not implement all commands (see _Supported By_)
+TAAR firmware implements an interface standard set by TAARABLE. The sender (TAARABLE) can send raw GCODE commands, while the receiver (TAAR) can respond with a JSON-based format.
 
-| Command | Description | Supported By |
-| - | - | - |
-| `home` | Homing sequence (calculate machine limits) | `TAAR-1` |
-| `echo [msg: string]` | Echo `msg` back through UART | `TAAR-1` |
-| `arm+` | Move arm up 1° | `TAAR-1` |
-| `arm-` | Move arm down 1° | `TAAR-1` |
-| `base+` | Move base left 1° | `TAAR-1` |
-| `base-` | Move base right 1° | `TAAR-1` |
-| `rotbase [angle: float]` | Move base to `angle` | `TAAR-1` |
-| `rotarm [angle: float]` | Move arm to `angle` | `TAAR-1` |
-| `moveto [x: float] [y: float] [z: float]` | Move to (`x`, `y`, `z`) performing inverse kinematics | `TAAR-1` |
+### GCODE Standard
+
+| GCODE Command | Description |
+| - | - |
+| `G4 P<ms>` | Pause the command queue for a set amount of time | 
+| `G60` | Save end effector position in memory |
+| `G61` | Moved to a previously saved end effector position |
+| `G92 X<position> Y<position> Z<position>` | Set end effector position |
+| `M02` | End the sequence, ignoring all commands after |
+
+### JSON Standard
+
+| JSON String | Description |
+| - | - |
+| `{ "info": "<message>" }` | An information response |
+| `{ "warning": "<message>" }` | A warning response |
+| `{ "error": "<message>" }` | An error response |
 
 ## Free & Open-Source
 
