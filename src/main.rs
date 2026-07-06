@@ -71,31 +71,34 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 }
                             }
 
-                            let received: JsonResponse = match serde_json::from_str(&response) {
-                                Ok(r) => r,
-                                Err(e) => {
-                                    ui.set_interface(
-                                        ui.get_interface()
-                                            + &format!("Error parsing response: {}", e),
-                                    );
+                            if !response.is_empty() {
+                                let received: JsonResponse = match serde_json::from_str(&response) {
+                                    Ok(r) => r,
+                                    Err(e) => {
+                                        ui.set_interface(
+                                            ui.get_interface()
+                                                + &format!("Error parsing response: {}\n", e),
+                                        );
 
-                                    return;
-                                }
-                            };
+                                        ui.set_enable_command_sending(true);
+                                        return;
+                                    }
+                                };
 
-                            for (kind, message) in received.0 {
-                                if kind == "info" {
-                                    ui.set_interface(
-                                        ui.get_interface() + &format!("Info: {}", message),
-                                    );
-                                } else if kind == "warning" {
-                                    ui.set_interface(
-                                        ui.get_interface() + &format!("Warning: {}", message),
-                                    );
-                                } else if kind == "error" {
-                                    ui.set_interface(
-                                        ui.get_interface() + &format!("Error: {}", message),
-                                    );
+                                for (kind, message) in received.0 {
+                                    if kind == "info" {
+                                        ui.set_interface(
+                                            ui.get_interface() + &format!("Info: {}\n", message),
+                                        );
+                                    } else if kind == "warning" {
+                                        ui.set_interface(
+                                            ui.get_interface() + &format!("Warning: {}\n", message),
+                                        );
+                                    } else if kind == "error" {
+                                        ui.set_interface(
+                                            ui.get_interface() + &format!("Error: {}\n", message),
+                                        );
+                                    }
                                 }
                             }
                         }
