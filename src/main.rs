@@ -126,7 +126,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let ui = ui_handle.unwrap();
 
             match serialport::new(&*ui.get_active_port(), 115200)
-                .timeout(Duration::from_millis(200))
+                .timeout(Duration::from_millis(100))
                 .open()
             {
                 Ok(port) => {
