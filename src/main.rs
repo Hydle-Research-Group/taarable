@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serialport::{SerialPort, SerialPortType::UsbPort, available_ports};
 use slint::{ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc, time::Duration};
 
 slint::include_modules!();
 
@@ -125,7 +125,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         move || {
             let ui = ui_handle.unwrap();
 
-            match serialport::new(&*ui.get_active_port(), 115200).open() {
+            match serialport::new(&*ui.get_active_port(), 115200)
+                .timeout(Duration::from_millis(200))
+                .open()
+            {
                 Ok(port) => {
                     *p.borrow_mut() = Some(port);
 
