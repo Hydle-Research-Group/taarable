@@ -42,71 +42,88 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let mut port_ref = p.borrow_mut();
 
                 if let Some(port) = port_ref.as_mut() {
-                    match port.write_all(format!("{}\n", cmd).as_bytes()) {
-                        Ok(_) => {
-                            let mut response = String::new();
-                            let mut buffer = [0u8; 128];
+                    let commands = cmd.split("\n").collect::<Vec<&str>>();
 
-                            loop {
-                                match port.read(&mut buffer) {
-                                    Ok(n) if n > 0 => {
-                                        let chunk = String::from_utf8_lossy(&buffer[..n]);
+                    // send a continuous stream of command lines
+                    'cmd_loop: for c in commands {
+                        match port.write_all(format!("{}\n", c).as_bytes()) {
+                            Ok(_) => {
+                                let mut response = String::new();
+                                let mut buffer = [0u8; 128];
 
-                                        if response.contains('\n') {
+                                loop {
+                                    match port.read(&mut buffer) {
+                                        Ok(n) if n > 0 => {
+                                            let chunk = String::from_utf8_lossy(&buffer[..n]);
+
+                                            if response.contains('\n') {
+                                                break;
+                                            }
+
+                                            response.push_str(&chunk);
+                                        }
+                                        Ok(_) => continue,
+                                        Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
                                             break;
                                         }
+                                        Err(e) => {
+                                            ui.set_interface(
+                                                ui.get_interface()
+                                                    + &format!("Read Error: {}\n", e),
+                                            );
+                                            break;
+                                        }
+                                    }
+                                }
 
-                                        response.push_str(&chunk);
-                                    }
-                                    Ok(_) => continue,
-                                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                                        break;
-                                    }
-                                    Err(e) => {
-                                        ui.set_interface(
-                                            ui.get_interface() + &format!("Read Error: {}\n", e),
-                                        );
-                                        break;
+                                if !response.is_empty() {
+                                    let received: JsonResponse =
+                                        match serde_json::from_str(&response) {
+                                            Ok(r) => r,
+                                            Err(e) => {
+                                                ui.set_interface(
+                                                    ui.get_interface()
+                                                        + &format!(
+                                                            "Error parsing response: {}\n",
+                                                            e
+                                                        ),
+                                                );
+
+                                                ui.set_enable_command_sending(true);
+                                                return;
+                                            }
+                                        };
+
+                                    for (kind, message) in received.0 {
+                                        if kind == "info" {
+                                            ui.set_interface(
+                                                ui.get_interface()
+                                                    + &format!("Info: {}\n", message),
+                                            );
+                                        } else if kind == "warning" {
+                                            ui.set_interface(
+                                                ui.get_interface()
+                                                    + &format!("Warning: {}\n", message),
+                                            );
+                                        } else if kind == "error" {
+                                            ui.set_interface(
+                                                ui.get_interface()
+                                                    + &format!("Error: {}\n", message),
+                                            );
+                                        } else if kind == "queue" {
+                                            if message == "quit" {
+                                                break 'cmd_loop;
+                                            }
+                                        }
                                     }
                                 }
                             }
 
-                            if !response.is_empty() {
-                                let received: JsonResponse = match serde_json::from_str(&response) {
-                                    Ok(r) => r,
-                                    Err(e) => {
-                                        ui.set_interface(
-                                            ui.get_interface()
-                                                + &format!("Error parsing response: {}\n", e),
-                                        );
-
-                                        ui.set_enable_command_sending(true);
-                                        return;
-                                    }
-                                };
-
-                                for (kind, message) in received.0 {
-                                    if kind == "info" {
-                                        ui.set_interface(
-                                            ui.get_interface() + &format!("Info: {}\n", message),
-                                        );
-                                    } else if kind == "warning" {
-                                        ui.set_interface(
-                                            ui.get_interface() + &format!("Warning: {}\n", message),
-                                        );
-                                    } else if kind == "error" {
-                                        ui.set_interface(
-                                            ui.get_interface() + &format!("Error: {}\n", message),
-                                        );
-                                    }
-                                }
+                            Err(e) => {
+                                ui.set_interface(
+                                    ui.get_interface() + &format!("Error Writing: {}\n", e),
+                                );
                             }
-                        }
-
-                        Err(e) => {
-                            ui.set_interface(
-                                ui.get_interface() + &format!("Error Writing: {}\n", e),
-                            );
                         }
                     }
                 } else {

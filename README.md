@@ -44,6 +44,7 @@ TAAR uses a GCODE style similar to that of [Marlin](https://marlinfw.org/meta/gc
 | `{ "info": "<message>" }` | An information response |
 | `{ "warning": "<message>" }` | A warning response |
 | `{ "error": "<message>" }` | An error response |
+| `{ "queue": "<continue\|quit>" }` | A command queue response (`continue` or `quit`) |
 
 ## Free & Open-Source
 
