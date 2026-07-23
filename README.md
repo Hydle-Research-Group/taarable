@@ -32,6 +32,7 @@ TAAR uses a GCODE style similar to that of [Marlin](https://marlinfw.org/meta/gc
 | - | - |
 | `G0 X<position> Y<position> Z<position> F<rate>` | Moves the end affector in a linear motion _[See Marlin Equivalent](https://marlinfw.org/docs/gcode/G000-G001.html)_ |
 | `G4 P<ms>` | Pause the command queue for a set amount of time _[See Marlin Equivalent](https://marlinfw.org/docs/gcode/G004.html)_ | 
+| `G6 X<direction> Y<direction> Z<direction> A<direction>` | Step an individual motor in a specified direction (where `X` is the base, `Y` is the shoulder, `Z` is the elbow, and `A` is the hand) _[See Marlin Equivalent](https://marlinfw.org/docs/gcode/G006.html)_ |
 | `G60` | Save the current end effector position in memory |
 | `G61` | Move the end effector to a previously saved position |
 | `G92 X<position> Y<position> Z<position>` | Set end effector position _[See Marlin Equivalent](https://marlinfw.org/docs/gcode/G092.html)_ |

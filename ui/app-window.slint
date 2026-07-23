@@ -48,7 +48,7 @@ export component AppWindow inherits Window {
                         text: "+arm";
 
                         clicked => {
-                            command = "arm+";
+                            command = "G6 Y1";
                             command_sent();
                         }
                     }
@@ -60,19 +60,7 @@ export component AppWindow inherits Window {
                         text: "+base";
 
                         clicked => {
-                            command = "base+";
-                            command_sent();
-                        }
-                    }
-
-                    Button {
-                        x: parent.width / 2 - self.width / 2;
-                        y: parent.height / 2 - self.height / 2;
-                        enabled: enable_command_sending;
-                        text: "home";
-
-                        clicked => {
-                            command = "home";
+                            command = "G6 X1";
                             command_sent();
                         }
                     }
@@ -84,7 +72,7 @@ export component AppWindow inherits Window {
                         text: "-base";
 
                         clicked => {
-                            command = "base-";
+                            command = "G6 X0";
                             command_sent();
                         }
                     }
@@ -96,7 +84,7 @@ export component AppWindow inherits Window {
                         text: "-arm";
 
                         clicked => {
-                            command = "arm-";
+                            command = "G6 Y0";
                             command_sent();
                         }
                     }
@@ -147,7 +135,7 @@ export component AppWindow inherits Window {
             Button {
                 text: "Move To Position";
                 clicked => {
-                    command = "moveto " + x.text + " " + y.text + " " + z.text;
+                    command = "G94 X" + x.text + " Y" + y.text + " Z" + z.text;
                     command_sent();
                 }
             }
