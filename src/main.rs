@@ -110,6 +110,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                 ui.get_interface()
                                                     + &format!("Error: {}\n", message),
                                             );
+                                            break 'cmd_loop;
                                         } else if kind == "queue" {
                                             if message == "quit" {
                                                 break 'cmd_loop;
