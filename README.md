@@ -1,10 +1,5 @@
 # TAARABLE
-A USB communication interface for the TAAR robotic arm.
-
-This app creates a Slint user interface over UART communication, allowing for command sending and machine controls.
-
-> [!WARNING]
-> TAARABLE is currently under active development, and the interface standard is subject to changes. See the [roadmap issue](https://github.com/Hydle-Research-Group/taarable/issues/1) for an outline of the project timeline.
+A terminal interface for USB communication with the [TAAR robotic arm](https://github.com/Hydle-Research-Group/taar).
 
 ## Usage
 
@@ -14,11 +9,7 @@ To start, clone the repository:
 git clone https://github.com/Hydle-Research-Group/taarable.git
 ```
 
-Then use `cargo run` to launch the interface. For local development, Slint hot-reloading can be enabled via:
-
-```sh
-SLINT_LIVE_PREVIEW=1 cargo run
-```
+Then run via `cargo run`. This will start a REPL for USB communication with the arm.
 
 ## Interface Standard
 

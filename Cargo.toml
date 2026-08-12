@@ -1,18 +1,11 @@
 [package]
 name = "taarable"
-version = "0.1.0-beta"
-description = "UART communication interface for the TAAR-x robotic arms"
-authors = ["Hydle Research Group"]
+version = "0.1.0"
 edition = "2024"
-license = "GPL-3.0"
-repository = "https://github.com/Hydle-Research-Group/taarable"
 publish = false
 
 [dependencies]
+clap = "4.6.6"
 serde = { version = "1.0.228", features = ["serde_derive"] }
 serde_json = "1.0.150"
 serialport = "4.9.0"
-slint = { version = "1.16.1", features = ["live-preview"] }
-
-[build-dependencies]
-slint-build = "1.16.1"

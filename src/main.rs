@@ -1,169 +1,169 @@
+use clap::{Command, arg};
 use serde::Deserialize;
-use serialport::{SerialPort, SerialPortType::UsbPort, available_ports};
-use slint::{ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc, time::Duration};
-
-slint::include_modules!();
+use serialport::SerialPort;
+use serialport::SerialPortType;
+use std::fs;
+use std::io::Write;
+use std::{collections::HashMap, time::Duration};
 
 #[derive(Deserialize)]
 struct JsonResponse(HashMap<String, String>);
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let ui = AppWindow::new()?;
+fn main() {
+    let matches = Command::new("TAARABLE")
+        .version("0.1.0")
+        .about("A terminal interface for USB communication with the TAAR robotic arm")
+        .arg(arg!(--port <USB_NAME>).help("Specify a USB port to use"))
+        .arg(arg!(--list ...).help("List available ports"))
+        .arg(arg!(--upload <FILE>).help("Upload a GCODE sequence"))
+        .get_matches();
 
-    let serial_port: Rc<RefCell<Option<Box<dyn SerialPort>>>> = Rc::new(RefCell::new(None));
-    let mut usb_ports = available_ports().expect("No available ports");
-    usb_ports.sort_by_key(|p| match p.port_type {
-        UsbPort(_) => 0,
-        _ => 1,
-    });
-    let ports: ModelRc<SharedString> = ModelRc::new(Rc::new(VecModel::from(
-        usb_ports
-            .iter()
-            .map(|p| p.port_name.clone().into())
-            .collect::<Vec<SharedString>>(),
-    )));
+    if let Some(g) = matches.get_one::<u8>("list")
+        && *g == 1u8
+    {
+        let ports = serialport::available_ports().unwrap();
 
-    // default ports
-    ui.set_ports(ports);
-
-    ui.on_command_sent({
-        let ui_handle = ui.as_weak();
-        let p = serial_port.clone();
-
-        move || {
-            let ui = ui_handle.unwrap();
-            let cmd = ui.get_command();
-
-            if !cmd.is_empty() {
-                ui.set_interface(ui.get_interface() + &format!("Sent: {}\n", cmd));
-                ui.set_enable_command_sending(false);
-
-                let mut port_ref = p.borrow_mut();
-
-                if let Some(port) = port_ref.as_mut() {
-                    let commands = cmd.split("\n").collect::<Vec<&str>>();
-
-                    // send a continuous stream of command lines
-                    'cmd_loop: for c in commands {
-                        match port.write_all(format!("{}\n", c).as_bytes()) {
-                            Ok(_) => {
-                                let mut response = String::new();
-                                let mut buffer = [0u8; 128];
-
-                                loop {
-                                    match port.read(&mut buffer) {
-                                        Ok(n) if n > 0 => {
-                                            let chunk = String::from_utf8_lossy(&buffer[..n]);
-
-                                            if response.contains('\n') {
-                                                break;
-                                            }
-
-                                            response.push_str(&chunk);
-                                        }
-                                        Ok(_) => continue,
-                                        Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                                            break;
-                                        }
-                                        Err(e) => {
-                                            ui.set_interface(
-                                                ui.get_interface()
-                                                    + &format!("Read Error: {}\n", e),
-                                            );
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if !response.is_empty() {
-                                    let received: JsonResponse =
-                                        match serde_json::from_str(&response) {
-                                            Ok(r) => r,
-                                            Err(e) => {
-                                                ui.set_interface(
-                                                    ui.get_interface()
-                                                        + &format!(
-                                                            "Error parsing response: {}\n",
-                                                            e
-                                                        ),
-                                                );
-
-                                                ui.set_enable_command_sending(true);
-                                                return;
-                                            }
-                                        };
-
-                                    for (kind, message) in received.0 {
-                                        if kind == "info" {
-                                            ui.set_interface(
-                                                ui.get_interface()
-                                                    + &format!("Info: {}\n", message),
-                                            );
-                                        } else if kind == "warning" {
-                                            ui.set_interface(
-                                                ui.get_interface()
-                                                    + &format!("Warning: {}\n", message),
-                                            );
-                                        } else if kind == "error" {
-                                            ui.set_interface(
-                                                ui.get_interface()
-                                                    + &format!("Error: {}\n", message),
-                                            );
-                                            break 'cmd_loop;
-                                        } else if kind == "queue" {
-                                            if message == "quit" {
-                                                break 'cmd_loop;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Err(e) => {
-                                ui.set_interface(
-                                    ui.get_interface() + &format!("Error Writing: {}\n", e),
-                                );
-                            }
-                        }
-                    }
-                } else {
-                    ui.set_interface(ui.get_interface() + "No serial port selected or open\n");
+        for p in ports {
+            match p.port_type {
+                SerialPortType::Unknown => {
+                    println!("Port: `{}` Status: Unknown", p.port_name)
                 }
-
-                ui.set_enable_command_sending(true);
+                _ => {
+                    println!("Port: `{}` Status: Available", p.port_name)
+                }
             }
         }
-    });
 
-    ui.on_port_changed({
-        let ui_handle = ui.as_weak();
-        let p = serial_port.clone();
+        return;
+    }
 
-        move || {
-            let ui = ui_handle.unwrap();
+    let uart_port: Option<Box<dyn SerialPort>>;
 
-            match serialport::new(&*ui.get_active_port(), 115200)
-                .timeout(Duration::from_millis(100))
+    match matches.get_one::<String>("port") {
+        Some(p) => {
+            match serialport::new(p, 115200)
+                .timeout(Duration::from_millis(1000))
                 .open()
             {
                 Ok(port) => {
-                    *p.borrow_mut() = Some(port);
+                    println!("Successfully connected to port: {}", port.name().unwrap());
 
-                    ui.set_interface(
-                        ui.get_interface() + &format!("Connected to {}\n", ui.get_active_port()),
-                    );
+                    uart_port = Some(port);
                 }
-
                 Err(e) => {
-                    ui.set_interface(ui.get_interface() + &format!("Failed to open port: {}\n", e));
+                    println!("Failed to open port: {}", e);
+                    return;
                 }
             }
         }
-    });
+        _ => {
+            return;
+        }
+    }
 
-    ui.invoke_port_changed(); // we must attempt to connect to the first available port
-    ui.run()?;
+    if let Some(mut uart_port) = uart_port {
+        match matches.get_one::<String>("upload") {
+            Some(p) => {
+                let contents = fs::read_to_string(p).unwrap_or_else(|e| {
+                    println!("Error uploading file: {e}");
+
+                    String::new()
+                });
+                let data = contents.split("\n").collect::<Vec<&str>>();
+
+                for cmd in data {
+                    match send_command(&mut uart_port, cmd) {
+                        Err(e) => {
+                            if !e.is_empty() {
+                                println!("{e}");
+                            } else {
+                                return;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                println!("Sequence finished");
+
+                return; // skip REPL, file uploaded
+            }
+            _ => {}
+        }
+
+        loop {
+            let mut code = String::new();
+
+            print!(">>> ");
+            let _ = std::io::stdout().flush();
+
+            std::io::stdin()
+                .read_line(&mut code)
+                .expect("Input text (stdin) was not a valid string");
+
+            if let Err(e) = send_command(&mut uart_port, &code)
+                && !e.is_empty()
+            {
+                println!("{e}");
+            }
+        }
+    }
+}
+
+fn send_command(port: &mut Box<dyn SerialPort>, command: &str) -> Result<(), String> {
+    match port.write_all(format!("{}\n", command).as_bytes()) {
+        Ok(_) => {
+            let mut response = String::new();
+            let mut buffer = [0u8; 128];
+
+            loop {
+                match port.read(&mut buffer) {
+                    Ok(n) if n > 0 => {
+                        let chunk = String::from_utf8_lossy(&buffer[..n]);
+
+                        if response.contains('\n') {
+                            break;
+                        }
+
+                        response.push_str(&chunk);
+                    }
+                    Ok(_) => continue,
+                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                        break;
+                    }
+                    Err(e) => {
+                        return Err(format!("Read Error: {}", e));
+                    }
+                }
+            }
+
+            if !response.is_empty() {
+                let received: JsonResponse = match serde_json::from_str(&response) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        return Err(format!("Error parsing response: {}", e));
+                    }
+                };
+
+                for (kind, message) in received.0 {
+                    if kind == "info" {
+                        println!("Info: {}", message);
+                    } else if kind == "warning" {
+                        println!("Warning: {}", message);
+                    } else if kind == "error" {
+                        return Err(format!("Error: {}", message));
+                    } else if kind == "queue" {
+                        if message == "quit" {
+                            return Err("".to_string());
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            return Err(format!("Error writing: {}", e));
+        }
+    }
 
     Ok(())
 }
